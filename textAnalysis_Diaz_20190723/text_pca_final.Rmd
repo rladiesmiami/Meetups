@@ -1,0 +1,303 @@
+---
+title: "Text Analysis with PCA and Hierarchical Clustering"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+# Pricipal Components Analysis
+# entering raw data and extracting PCs
+# from the correlation matrix
+fit <- princomp(word_scaled, cor=TRUE)
+summary(fit) # print variance accounted for
+loadings(fit) # pc loadings
+plot(fit,type="lines") # scree plot
+fit$scores # the principal components
+biplot(fit) 
+
+# # Varimax Rotated Principal Components
+# # retaining 5 components
+# library(psych)
+# fit <- principal(mydata, nfactors=5, rotate="varimax")
+# fit # print results 
+# 
+# # Maximum Likelihood Factor Analysis
+# # entering raw data and extracting 3 factors,
+# # with varimax rotation
+# fit <- factanal(mydata, 3, rotation="varimax", scores="regression")
+# print(fit, digits=2, cutoff=.3, sort=TRUE)
+# # plot factor 1 by factor 2
+# load <- fit$loadings[,1:2]
+# plot(load,type="n") # set up plot
+# text(load,labels=names(mydata),cex=.7) # add variable names 
+# 
+# # Principal Axis Factor Analysis
+# library(psych)
+# fit <- factor.pa(mydata, nfactors=3, rotation="varimax")
+# fit # print results 
+# 
+# # Determine Number of Factors to Extract
+# library(nFactors)
+# ev <- eigen(cor(mydata)) # get eigenvalues
+# ap <- parallel(subject=nrow(mydata),var=ncol(mydata),
+#   rep=100,cent=.05)
+# nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
+# plotnScree(nS)
+# 
+# # PCA Variable Factor Map
+# library(FactoMineR)
+# result <- PCA(mydata) # graphs generated automatically 
+# 
+# library(GPARotation)
+
+```
+
+
+```{r}
+
+# "https://raw.githubusercontent.com/glrn/nlp-disaster-analysis/master/dataset/recent_tweets_test/houston_tweets-labeled.csv"
+# https://www.hvitfeldt.me/blog/using-pca-for-word-embedding-in-r/
+library(tidyverse)
+library(tidytext)
+library(broom)
+library(randomForest)
+```
+
+
+```{r}
+
+# Tweets data source: 
+# https://raw.githubusercontent.com/glrn/nlp-disaster-analysis/master/dataset/socialmedia-disaster-tweets-DFE-only-tweets.txt
+
+data <- read.csv("tweets.csv", header = FALSE, col.names = "text")
+
+dim(data)
+
+```
+
+```{r}
+data[20:100,]
+```
+
+
+```{r}
+
+# Clean up the text
+data_clean <- data %>%
+  mutate(text = gsub("\\s?(f|ht)(tp)(s?)(://)([^\\.]*)[\\.|/](\\S*)", "", text))
+  
+data_clean$id <- seq.int(nrow(data_clean))
+
+data_clean
+
+
+# data_clean <- subset(data_clean, select = c(id, text))
+  # filter(choose_one == "Relevant") %>%
+# mutate(text = str_replace_all(text, " ?(f|@)[a-z]+", "")) 
+  #%>%
+  # select(id, text)
+# #   select(id, disaster, text)
+```
+
+
+
+
+```{r}
+library(tidyverse)
+library(purrr)
+data_counts <- map_df(1:2,
+                      ~ unnest_tokens(data_clean, word, text, 
+                                      token = "ngrams", n = 1)) %>%
+  anti_join(stop_words, by = "word") 
+data_counts
+
+# %>%
+  # filter(word != "__userref__")
+# 
+# data_counts %>%
+#   filter(id == 757)  # 427)
+```
+```{r}
+
+```
+
+
+
+
+```{r}
+# Also removing "__userref__" token
+top_tokens <- data_counts %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 6) %>%
+  slice(1:1000)
+
+
+nrow(top_tokens)
+
+# # 
+# #   #%>%
+# #   # select(word)
+
+
+
+```
+
+```{r}
+print(nrow(top_tokens))
+
+# top_tokens[1:10,]
+
+```
+
+
+```{r}
+## Checking out what we are seeing
+view_local <- unnest_tokens(data_clean, word, text, 
+                                      token = "ngrams", n = 1) %>%
+  left_join(data_clean, by = "id") %>%
+  filter(word == "wreck")
+
+view_local$text[1:10]
+
+## To improve:
+# Could add to stopwords removed
+# Could remove additional punctuation
+
+```
+
+
+
+```{r}
+unnested_words <- data_counts %>%
+  inner_join(top_tokens, by = "word") %>%
+  count(id, word, sort = TRUE) %>%
+  bind_tf_idf(word, id, n) %>%
+  mutate(
+    n_adjusted = n/2
+  # , nx_adjusted = n.x/2
+  # , ny_adjusted = n.y/2
+  )
+  # %>%
+
+unnested_words
+
+# %>%
+#   select(id, word, n)
+# 
+# unnested_words %>%
+#   filter(id == 757)
+```
+
+
+```{r}
+library(Matrix)
+library(irlba)
+
+sparse_word_matrix <- unnested_words %>%
+  cast_sparse(id, word, tf) 
+
+# counting_method: 
+# tf_idf 
+# , n
+# , n_adjusted
+# , tf
+# , idf
+
+dim(sparse_word_matrix)
+# sparse_word_matrix[1:10,]
+
+word_scaled <- scale(sparse_word_matrix) 
+
+dim(word_scaled)
+# word_scaled[1:10,]
+
+```
+
+
+```{r}
+# Determine number of clusters
+wss <- (nrow(word_scaled)-1)*sum(apply(word_scaled,2,var))
+for (i in 2:30) wss[i] <- sum(kmeans(word_scaled, 
+                                     centers=i)$withinss)
+plot(1:30, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+```
+
+```{r}
+library(nFactors)
+library(psych)
+library(GPArotation)
+ev <- eigen(cor(word_scaled)) # get eigenvalues
+ap <- parallel(subject=nrow(word_scaled),var=ncol(word_scaled),
+               rep=100,cent=.05)
+nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
+plotnScree(nS)
+```
+
+
+
+
+```{r}
+library(nFactors)
+library(psych)
+library(GPArotation)
+
+# Maximum Likelihood Factor Analysis
+# entering raw data and extracting n factors, 
+# with varimax rotation 
+fit <- fa(word_scaled, nfactors = 98, rotate = "varimax", scores = 'tenBerge')
+print(fit, digits=3, cut=.4, sort=TRUE)
+
+loadings <- predict(fit, word_scaled)
+loadings_df <- cbind(loadings, word_scaled)
+
+```
+
+
+```{r}
+# Ward Hierarchical Clustering
+
+# Visualization ONE
+# Clusters of documents
+d <- dist(word_scaled, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward.D") 
+plot(fit) # display dendogram
+groups <- cutree(fit, k=5) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters 
+rect.hclust(fit, k=, border="red")
+
+
+```
+
+
+```{r}
+
+# Visualization TWO
+# Clusters of words
+# words_transposed <- t(word_scaled)
+d <- dist(words_transposed, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward.D") 
+plot(fit) # display dendogram
+groups <- cutree(fit, k=5) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters 
+rect.hclust(fit, k=, border="red")
+
+
+```
+
+
+

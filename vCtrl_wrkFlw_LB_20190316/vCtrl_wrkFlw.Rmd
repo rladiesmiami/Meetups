@@ -1,0 +1,366 @@
+---
+title: "Version Control and Workflow in RStudio"
+subtitle: "R-Ladies Miami"
+author: "Layla Bouzoubaa  \nTwitter: [Bouzoulay](https://twitter.com/bouzoulay) "
+date: "March 21, 2019"
+output: 
+  html_document:
+    keep_md: yes
+    toc: yes
+---
+
+```{r vCtrl, echo=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+**HI! All files can be found on the [NEPIP_NGA Repo](https://github.com/labouz/NEPIP_NGA)**
+
+## Version Control
+Version control is a crucial consideration, especially when working with collaborators. We will try and collaborate on this project so, we will learn how to set up git on your machine and get it integrated with RStudio. Jenny Bryan also has a wonderful book online that provides an in-depth step-by-step on how to truly get git working smoothly, check it out here <https://happygitwithr.com>.  
+  
+  Overview:  
+
+1. Install Windows: [Git](https://git-scm.com/) / macOS: Xcode
+2. Register a [GitHub](https://github.com) account
+3. Get your GitHub known to RStudio
+4. Make a test repo on GitHub.com
+5. Connect RStudio to Git and GitHub
+6. Create project with version control
+7. Make changes, commit, and push
+8. Pulling changes
+9. Issues
+
+### What is Git and GitHub?
+#### 1. Git
+Git is a version control system. Simply, it allows you to capture "snapshots" (commits) of changes made and combines them automatically. This way, you and others can work on the same files at the same time and see each others changes. If there are conflicts or ambiguity, Git will show you those too.  
+There is a "parent" or "master" branch that can feed several "children" branches. 
+
+#### 2. GitHub
+GitHub is a website that allows you to share your projects on code with collaborators/the world. In conjunction with Git, it is one of the more user-friendly systems out there.  
+
+#### 3. Get your GitHub known to RStudio
+
+Instead of using the shell, let's take advantage of the [usethis package](https://usethis.r-lib.org/). This package is a great tool for automating those mundane tasks such as setting up Git/GitHub or even browsing through issues on GitHub.  
+  
+  Run these lines in your console - remembering to replace your GitHub username and email instead of mine. 
+    
+  `use_git_config()` is a function that sets Git options such as the username or email for either the user or the project.
+  
+  <br></br>
+
+```{r git, eval=FALSE}
+##install.packages("usethis")
+library(usethis)
+use_git_config(user.name = "labouz", user.email = "lab218@miami.edu")
+```
+
+#### 4. Create a test repo on GitHub.com
+Go to <https://github.com>. Go to your repositories page and click "New".  
+  Fill in info:  
+  
+* name: testRepo
+* description: "testing the setup of first repo"
+* private
+* initialize with README
+* click create
+* copy HTTPS URL  
+  
+  
+  
+  ![click on the green clone button](../images/1_https.jpg)
+  
+  
+We can use the shell (see Happy Git for more details) to clone the repo to our 
+local machines or we can do so from RStudio.
+
+### Version Control Projects in RStudio
+
+#### 5./6. Connect RStudio to Git and GitHub and Create a Version Control Project
+If it's your first time using version control within RStudio, most likely you will
+have to help RStudio find Git on your machine.  
+
+From RStudio, *Tools > Global Options > Git/SVN* and direct RStudio to your Git 
+executable file. Restart RStudio.  
+  
+
+![Set the path to where the .exe file is stored locally](../images/1_gitexe.jpg)
+  
+  
+Additional instructions for connecting Git/GitHub to RStudio:  <https://support.rstudio.com/hc/en-us/articles/200532077?version=1.1.463&mode=desktop>
+
+Now that RStudio can detect Git, let's make a project!  
+
+Once you've restarted RStudio, click on 
+*File > New Project*. Select the "Version Control" option and then select "Git". Here, you will paste the HTTPS URL of the repo we just created on GitHub.com. The name of the repo should auto-complete.
+Make sure the directory of the project is pointing to where you would like to store this project.  
+  
+  
+
+![Paste the URL of the repo into a new RStudio Version Control project](../images/1_newproj.jpg)
+  
+  You've successfully created a version control project! The repo you created on
+  GitHub will now be cloned to your local machine. 
+
+
+#### 7. Let's Make Some Changes!
+
+Let's open the README file and modify it. Add a line like "I'm going to push a change from RStudio"
+and hit save.   
+  
+  To commit these changes:  
+  
+  * Click the Git tab in the upper right corner
+  * Check the "Staged" box next to the README file.
+  * Press "Commit"
+  * Leave a "meaningful" commit message and press "Push"
+  
+  ![Commit the changes to the README file](../images/1_commit.jpg)
+
+  ![Leave a commit message and push the changes](../images/1_push.jpg)
+<br></br>
+<br></br>
+
+You may have noticed this thing called *.gitignore*. This file is what Git uses to determine which files and directories to ignore, before you make a commit. This is particularly helpful if you have some data that you wish to not push out onto your repository. It is not necessary to committ the .gitignore file unless everyone working on the project is ignoring the same files.  
+
+#### 8. Pulling
+
+  Let's modify the README of your test repo on GitHub. Leave a new line like, 
+  "This is a line from GitHub", leave a commit message, and  press commit.
+    
+  This should commit your change to the master branch but you will not see that
+  change reflected in your project in RStudio. To see the change, go into the Git
+  tab in the top right corner and press the blue "Pull" arrow. This will pull any 
+  changes to the master remotely, locally.  
+    
+> **Tip**: when working with collaborators, it's a good idea to pull changes first, 
+    before pushing your local changes. Pull > Modify > Commit > Push
+
+### Issues
+
+**FORK BREAK!**
+  
+##### 9. Merge conflicts
+Realistically, you will have a merge conflict. This is when two collaborators make changes to the same line of a file and push the file to their repo.
+
+Let's try it out and then we'll resolve it!  
+
+Let's open up the test repo we just created on GitHub.  
+
+  * Half of you - assign the person next to you to be a collaborator. 
+    * copy and paste the mergeConflict.R into your test repo.
+  * The other half- accept the request.
+    * open the mergeConflict.R file and add a title the graphic 
+    
+    ```{r merge, eval = FALSE}
+     g + 
+      geom_point(mapping = aes(x = hp, y = mpg, color = cyl)) +
+      ggtitle("Relationship Between MPG and HP")
+    ```
+    
+    * hit save, commit, push the change
+  * The first group, do the same but use a different title. Save, commit, push the change.
+  * You should get an error. First group, pull. Look at the document with the conflict and choose the preferred change. Commit, and push.
+
+  
+##### 10. Creating and Assigning Issues
+
+Issues are a useful way to track pieces of your code/project that need improvement, questions, etc.   
+
+Let's create an issue in our test repo. Go to the repo on GitHub and click on the *Issues* tab. 
+
+![](../images/1_newissue.jpg)
+  
+<br></br>
+
+Repo owners from earlier, you notice there is a bug in createIssue.R. Let's assign our partners to fix the bug by assigning them an *Issue* on GitHub. 
+
+  *  Copy and paste the R script into your test repo, commit and push the changes.   
+  *  Contributors, pull changes.  
+  *  Owners, let's create an issue. Hit the green **New Issue** button.   
+  *  Write a summary of the issue and assign the issue to the other person.  
+  *  Other person, fix issue, leave comment (something that includes "Issue #1"), and close issue.
+  
+
+![Create and issue and assign it](../images/1_assignissue.jpg)
+
+<br></br>
+
+![Write and comment and close the issue to mark it done](../images/1_closeissue.jpg)
+
+## Workflow and Efficiencies in RStudio  
+
+Below, I will highlight a few recommendations that will make the workflow of any project much smoother for your current self, future self, and others. I will try and show you how do these tasks within the RStudio IDE and using the very helpful [usethis](https://usethis.r-lib.org/) and [here](https://cran.r-project.org/web/packages/here/index.html) packages.  
+*usethis* is a package designed to aid in the automation of repetitive tasks which will make workflow much smoother and *here* allows for more disciplined and safe file paths. 
+
+```{r usethis, eval=FALSE}
+install.packages("usethis")
+```
+
+It can be used to do anything from make a new package to initializing a Git repo. Read the package documentation for a complete description of the package functions. For the purposes of this workshop, I will highlight the specific functions that may be useful for workflow efficiency. 
+
+*Source:* <https://whattheyforgot.org/>
+
+
+### Directory, RStudio Project, Repo 
+
+It is important to adopt a project oriented workflow. This will allow you to work on multiple projects at a time with other people. It's a good idea to create a new project before starting a new script - that way, all data and code within that project can be easily picked back up after a break.  
+
+1. Create a dedicated directory 
+2. Create an RStudio Project
+    + Click "File", "New Project"
+    + Click "New Directory" or "Existing Directory" (if syncing to a remote, click "Version Control")
+    + Name project  
+3. Git Repo
+
+#### Project Organization Tips
+
+* All files related to project in designated folder
+    - Sub-folders for types of data depending on complexity 
+  * Working directory set to project's folder  
+      - Do not hard code paths 
+* Relative file paths - relative to project folder (we will get to this a bit more below. ) 
+
+### Source and Blank Slates
+
+As scary as it may sounds, it's better to treat your R process and associated workspace as disposable. It is probably not a good sign when you need to leave your project and are not 100% sure your precious objects in your environment are reproducible. This attachment is indication you do not have a reproducible workflow.  
+  
+  
+Save your code, not your workspace and restart R often. This will pressure you make sure you save the source code for the required objects of your analysis and not just the workspace.  
+  
+  
+
+**USE THE IDE!**  
+Yes, IDE's are meant to make your coding life easier. There are many out there aside from RStudio but I will stick to what I know. Using an IDE allows you to develop code in a script versus directly into the console.  
+
+The IDE allows you to: 
+
+* Work on project A    
+    - R is started and working directory set in project folder  
+* Switch to project B  
+    - R is restarted and working directory is changed to project B folder  
+* Work simultaneously between projects A and B by having two instances of RStudio open at once    
+    - Each instance has its own R processes with their own working directories  
+  
+  
+**Note:** In case you haven't already noticed, RStudio saves your recently opened projects!  
+
+![Clicking the button to the right of the Project name will open it in a new instance](../images/1_changeproject.jpg)
+<br></br>
+<br></br>
+
+**BLANK SLATE!**  
+Like I mentioned previously, it's tempting to save your workspace and reload it every time you start up RStudio, but this is bad practice! Loading up RStudio to a blank slate every time enables the good practice of reproducibility.    
+  
+  
+
+You can set this option by going to *Tools* > *Global Options*  
+
+![](../images/1_workspace.png)
+<br></br>
+<br></br>
+
+You can also use:   
+
+```{r blank}
+library(usethis)
+
+use_blank_slate()
+```
+
+<br></br>
+
+This function will print directly to the console directions on how to start all RStudio sessions with a blank slate.
+
+<br></br>
+
+
+**RESTART R OFTEN!**
+
+![](../images/1_restart.jpg)
+
+<br></br>
+
+This is a good habit to start forming. I cannot tell you how many times I am *certain* my program runs smoothly until I've restarted R and realized that a my function was calling a variable in a dataset that was created in the console for testing purposes. Restarting R often will help you catch these types of silly bugs and prevent embarrassment in front of your boss.  
+  
+  
+### Kind Paths
+
+**MODULARITY**  
+  
+If an object takes too long to create, save it! Isolate each demanding process in its own script and write it to file:  `saveRDS(my_object, here("results", "my_object.rds"))`  (saves `my_object.rds` to sub-directory "results")
+  
+What is this `here()` function you speak of? Glad you asked! If you find yourself writing `setwd()` at the top of your scripts and you work with other people, STOP THAT RIGHT NOW! 
+  
+The [here](https://github.com/jennybc/here_here) package is helps you get around the awkwardness of building/setting paths to working directories or sub-directories. `here()` is meant to be used inside a project(i.e RStudio Project, Git repo, R package). 
+
+Read the documentation of [here package](https://cran.r-project.org/package=here).
+
+```{r here}
+##install.packages("here")
+
+library(here)
+
+here()
+
+```
+
+```{r eval=FALSE}
+library(readr)
+NGA <-  read_csv(here("data", "NEPIP_NGA.csv"))
+
+```
+
+<br></br>
+
+Using the [here](https://github.com/jennybc/here_here) package will save you a lot of grief in the future if ever you need to move files or collaborate. Be warned!  
+
+### Kind Filenames
+
+Last but not least, I feel I can't talk about hollistic workflow without talking about effective file
+naming conventions.  
+  
+  
+Filenames should be:  
+
+  * Machine readable  
+    - i.e. no spaces, punctuation, accented characters
+    - regular expression friendly
+  * Human readable  
+    - i.e. contextual information
+  * Sorted
+    - dated, chronological context
+    
+    
+```{r filename, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+
+## example r scripts in my directory
+
+files <- c("breast_descriptive20190311.r",
+                "colorectal_descriptive20190224.r",
+                "colorectal_survival20190228.r",
+                "breast_survival20190314.r",
+                "pancreatic_descriptive20190120.r",
+                "pancreatic_survival20190130.r")
+
+files_df <- tibble(fileName = files)
+
+## I just want the survival files. Machine readable filenames allow me to filter my table for any file containing "surival"
+
+files_df %>% 
+  filter(str_detect(fileName, "survival"))
+
+```
+
+<br></br>
+<br></br>
+
+
+### Next Time
+
+In our next workshop we will talk about reproducible research and making publication-ready docs in RMarkdown!
+
+<br></br>
+
+![](../images/1_thankyou.jpg)
