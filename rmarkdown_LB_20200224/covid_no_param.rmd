@@ -1,0 +1,147 @@
+---
+title: "Current State of COVID-19"
+author: "Layla B"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: sandstone
+---
+  
+```{r setup, include=FALSE, message=FALSE}
+library(conflicted)
+suppressMessages(conflict_prefer("filter", "dplyr"))
+suppressPackageStartupMessages(library(tidyverse))
+library(nCov2019)
+```
+
+
+# Coronavirus 
+
+## What is that? 
+
+Coronaviruses (CoV) are a large family of viruses that cause illness ranging from the common cold to more severe diseases such as Middle East Respiratory Syndrome (MERS-CoV) and Severe Acute Respiratory Syndrome (SARS-CoV). A novel coronavirus (nCoV) is a new strain that has not been previously identified in humans.
+
+Coronaviruses are zoonotic, meaning they are transmitted between animals and people.  Detailed investigations found that SARS-CoV was transmitted from civet cats to humans and MERS-CoV from dromedary camels to humans. Several known coronaviruses are circulating in animals that have not yet infected humans. 
+**Common signs of infection include respiratory symptoms, fever, cough, shortness of breath and breathing difficulties.** In more severe cases, infection can cause pneumonia, severe acute respiratory syndrome, kidney failure and even death.  
+
+Standard recommendations to prevent infection spread include *regular hand washing, covering mouth and nose when coughing and sneezing, thoroughly cooking meat and eggs.* Avoid close contact with anyone showing symptoms of respiratory illness such as coughing and sneezing.^[https://www.who.int/health-topics/coronavirus]
+
+## COVID-19
+
+CDC is closely monitoring an outbreak of respiratory disease caused by a novel (new) coronavirus that was first detected in Wuhan City, Hubei Province, China and which continues to expand. On February 11, 2020, the World Health Organization named the disease coronavirus disease 2019 (abbreviated “COVID-19”).
+
+Chinese health officials have reported tens of thousands of cases of COVID-19 in China, with the virus reportedly spreading from person-to-person in parts of that country. COVID-19 illnesses, most of them associated with travel from Wuhan, also are being reported in a growing number of international locations, including the United States. Some person-to-person spread of this virus outside China has been detected. The United States reported the [first confirmed instance of person-to-person spread](https://www.cdc.gov/media/releases/2020/p0130-coronavirus-spread.html) with this virus on January 30, 2020.^[https://www.cdc.gov/coronavirus/2019-nCoV/summary.html]  
+
+<center>
+![](../images/KeyPhoto_01.jpg)
+</center>
+
+## The Current State
+
+```{r eda, echo=FALSE}
+covid <- get_nCov2019(lang = "en") #list length 13
+updateTime <- covid[["lastUpdateTime"]]
+confirmedCases <- covid$chinaTotal$confirm
+
+areaTree <- covid[["areaTree"]]
+totalCases <- sum(areaTree$total$confirm)
+
+```
+
+Early on, many of the patients in the COVID-19 outbreak in Wuhan, China had some link to a large seafood and live animal market, suggesting animal-to-person spread. Later, a growing number of patients reportedly did not have exposure to animal markets, indicating person-to-person spread. Person-to-person spread has been reported outside China, including in the United States and other countries.   
+
+>As of `r lubridate::as_datetime(updateTime)`, there are `r format(confirmedCases, big.mark = ",")` confirmed cases in China and `r format(totalCases, big.mark = ",")` confirmed cases worldwide.  
+
+There 14 confirmed cases in the United States in the following states:
+
+* California (8)
+* Massachusets (1)
+* Washington (1)
+* Arizona (1)
+* Illinois (2)
+* Wisconsin (1)
+
+### Map of the World
+```{r worldmap, echo=FALSE, fig.align="center", fig.width=9, message=FALSE, warning=FALSE}
+library(maps)
+plot(covid)
+
+```
+
+### Historical Data by Province
+##### For the past 30 days
+```{r historical, echo=FALSE, warning=FALSE}
+#load data
+hist_ls <- load_nCov2019(lang = "en")
+hist_df <- hist_ls$data
+
+#look at cases by province
+by_province <- hist_df %>% 
+  group_by(province) %>% 
+  summarise(cases = max(cum_confirm),
+            healed = max(cum_heal),
+            dead = max(cum_dead)) %>% 
+  arrange(desc(cases))
+
+#interactive table for html docs
+
+DT::datatable(by_province)
+
+```
+
+```{r provinceplots, echo=FALSE, fig.width=9, message=FALSE, warning=FALSE}
+
+p <- by_province %>% 
+  mutate(province = fct_reorder(province, cases)) %>% 
+  ggplot(aes(x = province, y = cases))
+
+p +
+  geom_col(fill = "#9DA368") +
+  geom_text(aes(label= cases), 
+            position=position_dodge(width=.20), hjust= -.4, size= 2.5) +
+  coord_flip() +
+  theme(axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_blank()) +
+  labs(x = "Province", y = "Number of Confirmed Cases")
+
+```
+
+
+**Clearly Hubei Province has most of the cases**   
+
+
+Let's look at cases in this province over time...
+
+```{r hubei, echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
+
+hubei <- hist_df %>% 
+  filter(province == "Hubei") %>% 
+  group_by(time) %>% 
+  summarise(cases = sum(cum_confirm),
+            heal = sum(cum_heal),
+            dead = sum(cum_dead))
+
+
+t <- ggplot(hubei, aes(x = as.Date(time, "%m.%d")))
+
+t +
+  geom_col(aes(y = cases), fill = "#58718A") +
+  geom_point(aes(y = heal), color = "#DDBCBA") +
+  geom_line(aes(y = heal), color = "#DDBCBA") +
+  #scale_y_continuous(sec.axis = sec_axis(~. /5)) +
+  geom_text(aes(label = heal, y = heal), 
+            position=position_dodge(width=.9), size = 3, vjust = -2.5,
+            color = "#DDBCBA") +
+  theme_minimal() +
+  labs(x = "", y = "Number of Confirmed Cases")
+
+
+```
+
+
+
+#### Data Source
+Data for this report were obtained from the `nCov2019` package from [Guangchuang Yu](https://github.com/GuangchuangYu/nCov2019)
+
